@@ -143,7 +143,79 @@
 						</div>
 					</div>
 				</div>
-	
+
+				<div class="flex flex-col gap-6 pt-4 text-stone-900 dark:text-stone-100">
+					<h2 class="text-lg font-semibold ">Examples</h2>
+						
+					<div class="flex gap-1 items-center flex-wrap border-l-6 border-stone-950 px-3 py-2 bg-stone-400 dark:bg-stone-900/50">
+						<span>Routes with a </span>
+						<CodeLabel>->name('')</CodeLabel>
+						<span>parameter are automatically compatible in Vue by using </span>
+						<CodeLabel>route('name')</CodeLabel>
+						<span>and</span>
+						<CodeLabel>route('name', property)</CodeLabel>
+						<span>through </span>
+						<span class="font-bold">ziggy.js</span>.	
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<span class="font-semibold">Sharing props across every page</span>
+						<div class="flex gap-1 items-center flex-wrap w-full">
+							<span>Easily share data across all pages using </span>
+							<CodeLabel>Inertia::share()</CodeLabel> 
+							<span>in</span>
+							<CodeLabel>HandleInertiaRequests</CodeLabel> 
+							<span>middleware at </span>
+							<CodeLabel>app/Http/Middleware/HandleInertiaRequests.php:</CodeLabel>
+						</div>
+
+						<pre class="bg-stone-900 text-stone-100 dark:border dark:border-stone-700  rounded-lg font-mono text-xs overflow-x-auto block whitespace-pre">
+							<code>{{ codeSharedProps }}</code>
+						</pre>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<span class="font-semibold">Sharing props from a Laravel controller to Vue</span>
+						
+						<span>
+							When your controllers return Inertia responses:
+						</span>
+
+						<pre class="bg-stone-900 text-stone-100 dark:border dark:border-stone-700  rounded-lg font-mono text-xs overflow-x-auto block whitespace-pre">
+							<code>{{ codeControllersInertiaResponse }}</code>
+						</pre>
+
+						<span>
+							Vue will receive them automatically:
+						</span>
+
+						<pre class="bg-stone-900 text-stone-100 dark:border dark:border-stone-700  rounded-lg font-mono text-xs overflow-x-auto block whitespace-pre">
+							<code>{{ codeVueInertiaResponse }}</code>
+						</pre>
+					</div>
+
+					<div class="flex flex-col gap-2">
+						<span class="font-semibold">Programmatic form submissions</span>
+						
+						<span>
+							Inertia provides you with a way to seemlessly handle form states programmatically (composition API example):
+						</span>
+
+						<pre class="bg-stone-900 text-stone-100 dark:border dark:border-stone-700  rounded-lg font-mono text-xs overflow-x-auto block whitespace-pre">
+							<code>{{ codeVueFormTemplate }}</code>
+						</pre>
+
+						<pre class="bg-stone-900 text-stone-100 dark:border dark:border-stone-700  rounded-lg font-mono text-xs overflow-x-auto block whitespace-pre">
+							<code>{{ codeVueFormScript }}</code>
+						</pre>
+
+					</div>
+					<div class="flex gap-1 items-center flex-wrap border-l-6 border-stone-950 px-3 py-2 bg-stone-400 dark:bg-stone-900/50">
+						<span class="flex gap-1 items-center h-fit">
+							For more info and examples, read the <a class="text-blue-500 hover:underline" href="https://inertiajs.com/forms" alt="Inertia.js Form Documentation">Inertia documentation</a>
+						</span>					
+					</div>
+				</div>
 				<div class="pt-8  border-t border-stone-200 dark:border-stone-700  text-stone-400 dark:text-stone-500 flex w-full justify-between text-center items-center">
 					<p class="flex gap-1 items-center">Landing page powered by <LogoVue class="w-4 h-4"/> and <LogoTailwind class="w-6 h-6"/></p>
 					<p class="">Maintained with ❤️ by Davy L</p>
@@ -155,12 +227,22 @@
 </template>
   
 <script setup lang="ts">
-	import { ref, computed } from 'vue';
+	import { ref, computed, onMounted } from 'vue';
+
+	import hljs from 'highlight.js'
+	import 'highlight.js/lib/languages/php'
+
+	onMounted(() => {
+		document.querySelectorAll('pre code').forEach((block) => {
+			hljs.highlightElement(block as HTMLElement)
+		})
+	});
 
 	import { useTheme } from '@/composables/useTheme';
 	const { theme, toggleTheme } = useTheme();
 
 	import Marquee from '@/components/Marquee.vue';
+	import CodeLabel from '@/components/CodeLabel.vue';
 	
 	import LogoInertia from '@/icons/LogoInertia.vue';
 	import LogoLaravel from '@/icons/LogoLaravel.vue';
@@ -198,4 +280,66 @@
 		}
 		return theme.value === 'dark';
 	});
+
+
+	const codeSharedProps = `
+	public function share(Request $request): array
+	{
+		return [
+			...parent::share($request),
+			'auth' => [
+				'user' => $request->user(),
+			],
+			'flash' => [
+				'success' => $request->session()->get('success'),
+				'error' => $request->session()->get('error'),
+			],
+		];
+	}`;
+
+	const codeControllersInertiaResponse = `
+	use Inertia\\Inertia;
+
+	return Inertia::render('Dashboard', [
+		'user' => $user
+	]);`;
+
+	const codeVueInertiaResponse = `
+	defineProps({
+		user: Object 
+	})`;
+
+	const codeVueFormTemplate = `
+	<form @submit.prevent="submit">
+		<div>
+			<label for="name">Name:</label>
+
+			<input 
+				id="name" 
+				type="text" 
+				v-model="form.name" 
+				:disabled="form.processing"
+			/>
+			
+			<span 
+				v-if="form.errors.name" 
+				v-html="form.errors.name" 
+				class="text-red-500 text-sm"
+			/>
+		</div>
+	</form>`;
+	const codeVueFormScript = `
+	import { useForm } from '@inertiajs/vue3'
+
+	const form = useForm({
+		name: '',
+	})
+		
+	const submit = () => {
+		form.post('/submit', {
+			onError: (errors) => console.error(errors);
+			onSuccess: () => console.log('Form submitted successfully!');
+			onFinished: () => console.log('Form lifecycle has ended.');
+		});
+	}`;
 </script>
